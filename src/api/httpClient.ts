@@ -160,7 +160,6 @@ export function getSongStreamUrl(
     id,
     maxBitRate,
     format,
-    estimateContentLength: 'true',
   })
 }
 

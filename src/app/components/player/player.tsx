@@ -6,7 +6,6 @@ import { TrackInfo } from '@/app/components/player/track-info'
 import useMediaSession from '@/app/hooks/use-media-session'
 import {
   usePlayerActions,
-  usePlayerDuration,
   usePlayerIsPlaying,
   usePlayerLoop,
   usePlayerMediaType,
@@ -43,7 +42,6 @@ export function Player() {
   const isPlaying = usePlayerIsPlaying()
   const mediaType = usePlayerMediaType()
   const isLoopActive = usePlayerLoop()
-  const currentDuration = usePlayerDuration()
   const audioPlayerRef = usePlayerRef()
   const progress = usePlayerProgress()
   const { resetTitle, radioSession, songSession, playbackState } =
@@ -99,17 +97,21 @@ export function Player() {
     }
   }, [isPlaying, mediaType, radio])
 
+  const handleDataLoaded = useCallback(() => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    // duration is infinite if the duration is unknown and no data
+    setCurrentDuration(
+      Math.floor(audio.duration === Infinity ? 0 : audio.duration ?? 0),
+    )
+  }, [setCurrentDuration])
+
   const setupProgressListener = useCallback(() => {
     const audio = audioRef.current
     if (!audio) return
 
     audio.currentTime = progress
-    const audioDuration = Math.floor(audio.duration)
-
-    if (currentDuration !== audioDuration) {
-      setCurrentDuration(audioDuration)
-    }
-
     const handleTimeUpdate = () => {
       setProgress(Math.floor(audio.currentTime))
     }
@@ -118,7 +120,7 @@ export function Player() {
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate)
     }
-  }, [currentDuration, progress, setCurrentDuration, setProgress])
+  }, [progress, setProgress])
 
   const handleSongEnded = useCallback(() => {
     if (hasNextSong()) {
@@ -168,6 +170,7 @@ export function Player() {
           onPlay={() => setPlayingState(true)}
           onPause={() => setPlayingState(false)}
           onLoadedMetadata={setupProgressListener}
+          onDurationChange={handleDataLoaded}
           onEnded={handleSongEnded}
           onLoadStart={() => {
             if (audioRef.current) audioRef.current.volume = getVolume() / 100

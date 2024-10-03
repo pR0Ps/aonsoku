@@ -69,9 +69,14 @@ export function PlayerProgress({ audioRef, song }: PlayerProgressProps) {
     }
   }, [localProgress, progress, setProgress, updateAudioCurrentTime])
 
+  const totalCurrentDuration = useMemo(
+    () => Math.max(song?.duration ?? 0, currentDuration ?? 0),
+    [song, currentDuration],
+  )
+
   const songDuration = useMemo(
-    () => convertSecondsToTime(currentDuration ?? 0),
-    [currentDuration],
+    () => convertSecondsToTime(totalCurrentDuration),
+    [totalCurrentDuration],
   )
 
   const sendScrobble = useCallback(async (songId: string) => {
@@ -80,7 +85,7 @@ export function PlayerProgress({ audioRef, song }: PlayerProgressProps) {
 
   useEffect(() => {
     if (mediaType === 'song') {
-      const progressPercentage = (progress / currentDuration) * 100
+      const progressPercentage = (progress / totalCurrentDuration) * 100
 
       if (progressPercentage === 0) isScrobbleSentRef.current = false
 
@@ -89,7 +94,7 @@ export function PlayerProgress({ audioRef, song }: PlayerProgressProps) {
         isScrobbleSentRef.current = true
       }
     }
-  }, [progress, currentDuration, mediaType, sendScrobble, currentSong.id])
+  }, [progress, totalCurrentDuration, mediaType, sendScrobble, currentSong.id])
 
   const currentTime = convertSecondsToTime(isSeeking ? localProgress : progress)
 
@@ -111,7 +116,7 @@ export function PlayerProgress({ audioRef, song }: PlayerProgressProps) {
           defaultValue={[0]}
           value={isSeeking ? [localProgress] : [progress]}
           tooltipValue={currentTime}
-          max={currentDuration}
+          max={totalCurrentDuration}
           step={1}
           className="cursor-pointer w-[32rem]"
           onValueChange={([value]) => handleSeeking(value)}
